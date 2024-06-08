@@ -66,11 +66,12 @@ def check_com_port(port: str):
 
     connection = client.connect()
     if not connection:
+        log.error('Ошибка подключения')
         return False
-
     try:
         rr = client.read_holding_registers(address=port_slaves[port], count=0, unit=2)
         if isinstance(rr, ModbusIOException):
+            print('Ошибка чтения read_holding_registers', rr.message)
             return False
         else:
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
