@@ -66,19 +66,19 @@ def check_com_port(port: str):
 
     connection = client.connect()
     if not connection:
-        log.error('Ошибка подключения')
+        log.warning('Ошибка подключения')
         return False
     try:
         rr = client.read_holding_registers(address=port_slaves[port], count=2)
         if isinstance(rr, ModbusIOException):
-            log.error('Ошибка чтения read_holding_registers', rr.message)
+            log.warning('Ошибка чтения read_holding_registers', rr.message)
             return False
         else:
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
             int_value = (rr[0] << 24) | (rr[1] << 16) | (rr[2] << 8) | rr[3]
             return int_value
     except Exception as e:
-        log.error(f'Ошибка чтения с {port}: {e}')
+        log.warning(f'Ошибка чтения с {port}: {e}')
         return False
     finally:
         client.close()
@@ -88,7 +88,7 @@ def send_telegram_message(message):
     try:
         bot.send_message(chat_id=CHAT_ID, text=message)
     except TelegramError as e:
-        log.error(f'Не удалось отправить сообщение в телеграм: {e}')
+        log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
 
 
 def get_last_value(slave_id):
@@ -110,7 +110,7 @@ def get_last_value(slave_id):
         cursor.close()
         return last_value
     except Exception as e:
-        log.error(f'Ошибка чтения с базы данных: {e}')
+        log.warning(f'Ошибка чтения с базы данных: {e}')
     finally:
         if conn:
             conn.close()
@@ -148,7 +148,7 @@ def write_to_db(port, value):
             log.info(f'Нет новой записи для {port}, последняя запись[indate={last_value[0]}, weight={last_value[1]}]')
         cursor.close()
     except Exception as e:
-        log.error(f'Ошибка чтения с базы данных: {e}')
+        log.warning(f'Ошибка чтения с базы данных: {e}')
     finally:
         if conn:
             conn.close()
@@ -161,7 +161,7 @@ def scheduled_read():
             log.info(f'Успешно прочли данные с порта={port} slave_id={port_slaves[port]}, значение={value}')
             write_to_db(port, value)
         else:
-            log.error(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
+            log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
 
 
 scheduler = BackgroundScheduler()
@@ -177,4 +177,4 @@ except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
     log.info('Приложение остановлено.')
 except Exception as ex:
-    log.error('Ошибка в приложение, %s', ex)
+    log.warning('Ошибка в приложение, %s', ex)
