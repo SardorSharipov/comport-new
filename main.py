@@ -57,7 +57,7 @@ def check_com_port(port: str):
     client = ModbusSerialClient(
         method='rtu',
         port=port,
-        baudrate=9600,
+        baudrate=19200,
         timeout=1,
         parity='N',
         stopbits=1,
