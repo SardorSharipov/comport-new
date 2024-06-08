@@ -69,7 +69,7 @@ def check_com_port(port: str):
         log.warning('Ошибка подключения')
         return False
     try:
-        rr = client.read_holding_registers(address=port_slaves[port], count=2)
+        rr = client.read_holding_registers(address=0, slave=port_slaves[port], count=2)
         if isinstance(rr, ModbusIOException):
             log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
             return False
