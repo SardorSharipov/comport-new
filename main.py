@@ -71,7 +71,7 @@ def check_com_port(port: str):
     try:
         rr = client.read_holding_registers(address=port_slaves[port], count=2)
         if isinstance(rr, ModbusIOException):
-            log.warning('Ошибка чтения read_holding_registers', rr.message)
+            log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
             return False
         else:
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
@@ -177,4 +177,4 @@ except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
     log.info('Приложение остановлено.')
 except Exception as ex:
-    log.warning('Ошибка в приложение, %s', ex)
+    log.warning(f'Ошибка в приложение, {ex}')
