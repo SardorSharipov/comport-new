@@ -1,18 +1,19 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import time
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
+import psycopg2
+from apscheduler.schedulers.background import BackgroundScheduler
+from dotenv import load_dotenv
+from psycopg2 import sql
 from pymodbus.client import ModbusSerialClient
 from pymodbus.constants import Endian
 from pymodbus.exceptions import ModbusIOException
 from pymodbus.payload import BinaryPayloadDecoder
 from telegram import Bot
 from telegram.error import TelegramError
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
-import psycopg2
-from psycopg2 import sql
-from dotenv import load_dotenv
 
 load_dotenv('config.env')
 log_file = 'data.log'
