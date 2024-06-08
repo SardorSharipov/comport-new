@@ -32,7 +32,9 @@ POSTGRES_DATABASE = os.getenv('POSTGRES_DATABASE')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 POSTGRES_HOST = os.getenv('POSTGRES_HOST')
 POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-TIMER_MINUTES = int(os.getenv('TIMER_MINUTES'))
+TIMER_SECONDS = int(os.getenv('TIMER_SECONDS'))
+DAILY_HOUR = int(os.getenv('DAILY_HOUR'))
+DAILY_MINUTE = int(os.getenv('DAILY_MINUTE'))
 IP_ADDRESS = os.getenv('IP_ADDRESS')
 
 bot = Bot(token=TELEGRAM_TOKEN)
@@ -162,8 +164,8 @@ def scheduled_read():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(daily_check, 'cron', hour=8, minute=0)
-scheduler.add_job(scheduled_read, 'interval', minutes=TIMER_MINUTES)
+scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
 
 scheduler.start()
 
