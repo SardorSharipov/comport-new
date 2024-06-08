@@ -159,7 +159,7 @@ def scheduled_read():
     for port in port_slaves:
         value = check_com_port(port)
         if value is not False:
-            log.info(f'Успешно прочли данные с порта={port} slave_id={port_slaves[port]}, значение={value}')
+            log.info(f'Успешно прочли данные с порта={port} slave_id={port_slaves[port]}, значение={value / 10.0}')
             write_to_db(port, value)
         else:
             log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
