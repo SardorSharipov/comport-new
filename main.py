@@ -5,6 +5,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 import psycopg2
+import serial
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from psycopg2 import sql
@@ -25,6 +26,7 @@ log.addHandler(handler)
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
+PROTOCOLS = [s.strip() for s in os.getenv('PROTOCOLS').split(',') if s.strip() != '']
 SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
 PORT_NAMES = [s.strip() for s in os.getenv('PORT_NAMES').split(',') if s.strip() != '']
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
@@ -41,9 +43,11 @@ IP_ADDRESS = os.getenv('IP_ADDRESS')
 bot = Bot(token=TELEGRAM_TOKEN)
 port_slaves = {}
 slaves_port = {}
+port_protocol = {}
 for i in range(len(SLAVE_IDS)):
     port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
     slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
+    port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
 
 db_params = {
     'dbname': POSTGRES_DATABASE,
@@ -55,34 +59,61 @@ db_params = {
 
 
 def check_com_port(port: str):
-    client = ModbusSerialClient(
-        method='rtu',
-        port=port,
-        baudrate=19200,
-        timeout=1,
-        parity='N',
-        stopbits=1,
-        bytesize=8
-    )
+    if port_protocol[port] == 'modbus':
+        client = ModbusSerialClient(
+            method='rtu',
+            port=port,
+            baudrate=19200,
+            timeout=1,
+            parity='N',
+            stopbits=1,
+            bytesize=8
+        )
 
-    connection = client.connect()
-    if not connection:
-        log.warning('Ошибка подключения')
-        return False
-    try:
-        rr = client.read_holding_registers(address=i, slave=port_slaves[port], count=2, unit=1)
-        if isinstance(rr, ModbusIOException):
-            log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
+        connection = client.connect()
+        if not connection:
+            log.warning('Ошибка подключения')
             return False
-        else:
-            rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
-            int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
-            return int_value
-    except Exception as e:
-        log.warning(f'Ошибка чтения с {port}: {e}')
+        try:
+            rr = client.read_holding_registers(address=i, slave=port_slaves[port], count=2, unit=1)
+            if isinstance(rr, ModbusIOException):
+                log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
+                return False
+            else:
+                rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
+                int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
+                return int_value
+        except Exception as e:
+            log.warning(f'Ошибка чтения с {port}: {e}')
+            return False
+        finally:
+            client.close()
+    else:
+        ser = serial.Serial(
+            port=port,
+            baudrate=19200,
+            timeout=1,
+            parity=serial.PARITY_NONE,
+            stopbits=1,
+            bytesize=8
+        )
+        try:
+            ser.open()
+            if ser.in_waiting > 0:
+                data = ser.readline().decode('utf-8').strip()
+                hex_string = data.strip()
+                if len(hex_string) >= 54:  # Ensure there's enough data
+                    target_hex = hex_string[46:54]
+                    numeric_value = int(target_hex, 16)
+                    logging.info(f'Sending value: {numeric_value}')
+                    return numeric_value
+                else:
+                    logging.warning(f'Не удалось считать данные с порта, неправильный формат hex={hex_string}')
+            else:
+                logging.warning(f'не удалось вообще считать из порта, ser.in_waiting={ser.in_waiting}')
+        except Exception as ex:
+            logging.warning(f'Исключение на открытие порта, ex={ex}')
         return False
-    finally:
-        client.close()
 
 
 def send_telegram_message(message):
@@ -137,10 +168,11 @@ def write_to_db(port, value):
         last_value = get_last_value(port_slaves[port])
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
-        if last_value is None or int(last_value[1] * 10) != value:
+        coefficient = 10.0 if port_protocol[port] == 'modbus' else 100.0
+        if last_value is None or int(last_value[1] * coefficient) != value:
             query_insert = sql.SQL(f'''
                 INSERT INTO {POSTGRES_TABLE} (address, weight, indate)
-                VALUES ({port_slaves[port]}::SMALLINT, {value / 10.0}::FLOAT, CURRENT_TIMESTAMP)
+                VALUES ({port_slaves[port]}::SMALLINT, {value / coefficient}::FLOAT, CURRENT_TIMESTAMP)
             ''')
             cursor.execute(query_insert, (port, value, datetime.now()))
             conn.commit()
@@ -158,8 +190,9 @@ def write_to_db(port, value):
 def scheduled_read():
     for port in port_slaves:
         value = check_com_port(port)
+        coefficient = 10.0 if port_protocol[port] == 'modbus' else 100.0
         if value is not False:
-            log.info(f'Успешно прочли данные с порта={port} slave_id={port_slaves[port]}, значение={value / 10.0}')
+            log.info(f'Успешно прочли данные с порта={port} slave_id={port_slaves[port]}, значение={value / coefficient}')
             write_to_db(port, value)
         else:
             log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
