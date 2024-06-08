@@ -79,6 +79,8 @@ def check_com_port(port: str):
                 return False
             else:
                 log.info(f'START_ADDRESS={i}')
+                print(f'START_ADDRESS={i}')
+                print(f'registers={rr.registers}')
                 decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
                 value = decoder.decode_32bit_uint()
                 log.info(f'VALUE-BIG={value}')
