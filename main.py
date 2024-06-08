@@ -74,7 +74,7 @@ def check_com_port(port: str):
             log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
             return False
         else:
-            log.info(f'read_holding_registers_0={rr}')
+            log.info(f'read_holding_registers_0={rr.registers}')
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
             log.info(f'read_holding_registers_1={rr}')
             int_value = (rr[0] << 24) | (rr[1] << 16) | (rr[2] << 8) | rr[3]
