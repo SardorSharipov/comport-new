@@ -80,7 +80,7 @@ def check_com_port(port: str):
             else:
                 rrr = [(rr.registers[0] >> 8), rr.registers[0] % 256, (rr.registers[1] >> 8), rr.registers[1] % 256]
                 int_value = (rrr[3] << 24) | (rrr[2] << 16) | (rrr[1] << 8) | rrr[0]
-                if int_value > 400:
+                if int_value > 400 or int_value == 0:
                     continue
                 log.info(f'START_ADDRESS={i}')
                 print(f'START_ADDRESS={i}')
@@ -93,7 +93,7 @@ def check_com_port(port: str):
                 value = decoder.decode_32bit_uint()
                 log.info(f'VALUE-LITTLE={value}')
                 print(f'VALUE-LITTLE={value}')
-                rr = [(rr.registers[0] >> 8), rr.registers[0] % 256, (rr.registers[1] >> 8), rr.registers[1] % 256]
+                rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
                 int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
                 log.info(f'VALUE-OWN={int_value}')
                 print(f'VALUE-OWN={int_value}')
