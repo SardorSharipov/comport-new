@@ -77,18 +77,19 @@ def check_com_port(port: str):
             log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
             return False
         else:
-            decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-            value = decoder.decode_32bit_uint()
-            log.info(f'VALUE={value}')
-            decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.LITTLE, wordorder=Endian.BIG)
-            value = decoder.decode_32bit_uint()
-            log.info(f'VALUE={value}')
-            log.info(f'read_holding_registers_0={rr.registers}')
-            log.info(f'BITS={rr.bits}')
-            rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
-            log.info(f'read_holding_registers_1={rr}')
-            int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
-            return int_value
+            print(rr)
+            # decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            # value = decoder.decode_32bit_uint()
+            # log.info(f'VALUE={value}')
+            # decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.LITTLE, wordorder=Endian.BIG)
+            # value = decoder.decode_32bit_uint()
+            # log.info(f'VALUE={value}')
+            # log.info(f'read_holding_registers_0={rr.registers}')
+            # log.info(f'BITS={rr.bits}')
+            # rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
+            # log.info(f'read_holding_registers_1={rr}')
+            # int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
+            return 0 #int_value
     except Exception as e:
         log.warning(f'Ошибка чтения с {port}: {e}')
         return False
