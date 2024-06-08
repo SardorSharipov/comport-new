@@ -3,7 +3,9 @@ from logging.handlers import RotatingFileHandler
 import os
 import time
 from pymodbus.client import ModbusSerialClient
+from pymodbus.constants import Endian
 from pymodbus.exceptions import ModbusIOException
+from pymodbus.payload import BinaryPayloadDecoder
 from telegram import Bot
 from telegram.error import TelegramError
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -74,6 +76,9 @@ def check_com_port(port: str):
             log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
             return False
         else:
+            decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            value = decoder.decode_32bit_uint()
+            log.info(f'VALUE={value}')
             log.info(f'read_holding_registers_0={rr.registers}')
             log.info(f'BITS={rr.bits}')
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
