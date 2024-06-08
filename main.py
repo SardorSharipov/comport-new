@@ -136,7 +136,7 @@ def write_to_db(port, value):
         last_value = get_last_value(port_slaves[port])
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
-        if last_value is None or last_value[0] != value:
+        if last_value is None or last_value[1] != value:
             query_insert = sql.SQL(f'''
                 INSERT INTO {POSTGRES_TABLE} (address, weight, indate)
                 VALUES ({port_slaves[port]}::SMALLINT, {value}::FLOAT, CURRENT_TIMESTAMP)
