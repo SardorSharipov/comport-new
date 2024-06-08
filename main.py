@@ -80,6 +80,9 @@ def check_com_port(port: str):
             decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
             value = decoder.decode_32bit_uint()
             log.info(f'VALUE={value}')
+            decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.LITTLE, wordorder=Endian.BIG)
+            value = decoder.decode_32bit_uint()
+            log.info(f'VALUE={value}')
             log.info(f'read_holding_registers_0={rr.registers}')
             log.info(f'BITS={rr.bits}')
             rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
