@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import time
 from pymodbus.client import ModbusSerialClient
@@ -15,25 +16,14 @@ load_dotenv('config.env')
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
-handler = logging.FileHandler('data.log', mode='a')
+handler = RotatingFileHandler('logfile.log', maxBytes=10240, backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 
-max_log_lines = 1000
-
-
-def rotate_log_file():
-    with open('data.log', 'r') as f:
-        lines = f.readlines()
-    if len(lines) > max_log_lines:
-        with open('data.log', 'w') as f:
-            f.writelines(lines[-max_log_lines:])
-
-
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
-SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',')]
-PORT_NAMES = [s.strip() for s in os.getenv('PORT_NAMES').split(',')]
+SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
+PORT_NAMES = [s.strip() for s in os.getenv('PORT_NAMES').split(',') if s.strip() != '']
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
 POSTGRES_USERNAME = os.getenv('POSTGRES_USERNAME')
 POSTGRES_DATABASE = os.getenv('POSTGRES_DATABASE')
@@ -167,7 +157,6 @@ def scheduled_read():
             write_to_db(port, value)
         else:
             log.error(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
-    rotate_log_file()
 
 
 scheduler = BackgroundScheduler()
