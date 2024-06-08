@@ -9,9 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from psycopg2 import sql
 from pymodbus.client import ModbusSerialClient
-from pymodbus.constants import Endian
 from pymodbus.exceptions import ModbusIOException
-from pymodbus.payload import BinaryPayloadDecoder
 from telegram import Bot
 from telegram.error import TelegramError
 
@@ -72,33 +70,14 @@ def check_com_port(port: str):
         log.warning('Ошибка подключения')
         return False
     try:
-        for i in range(40000):
-            rr = client.read_holding_registers(address=i, slave=port_slaves[port], count=2, unit=1)
-            if isinstance(rr, ModbusIOException):
-                log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
-                return False
-            else:
-                rrr = [(rr.registers[0] >> 8), rr.registers[0] % 256, (rr.registers[1] >> 8), rr.registers[1] % 256]
-                int_value = (rrr[3] << 24) | (rrr[2] << 16) | (rrr[1] << 8) | rrr[0]
-                if int_value > 400 or int_value == 0:
-                    continue
-                log.info(f'START_ADDRESS={i}')
-                print(f'START_ADDRESS={i}')
-                print(f'registers={rr.registers}')
-                decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-                value = decoder.decode_32bit_uint()
-                log.info(f'VALUE-BIG={value}')
-                print(f'VALUE-BIG={value}')
-                decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.LITTLE, wordorder=Endian.BIG)
-                value = decoder.decode_32bit_uint()
-                log.info(f'VALUE-LITTLE={value}')
-                print(f'VALUE-LITTLE={value}')
-                rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
-                int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
-                log.info(f'VALUE-OWN={int_value}')
-                print(f'VALUE-OWN={int_value}')
-        return False
-        # return 0 #int_value
+        rr = client.read_holding_registers(address=i, slave=port_slaves[port], count=2, unit=1)
+        if isinstance(rr, ModbusIOException):
+            log.warning(f'Ошибка чтения read_holding_registers {rr.message}')
+            return False
+        else:
+            rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
+            int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
+            return int_value
     except Exception as e:
         log.warning(f'Ошибка чтения с {port}: {e}')
         return False
