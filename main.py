@@ -85,7 +85,7 @@ def check_com_port(port: str):
             log.info(f'VALUE={value}')
             log.info(f'read_holding_registers_0={rr.registers}')
             log.info(f'BITS={rr.bits}')
-            rr = [rr.registers[0] >> 8, rr.registers[0], rr.registers[1] >> 8, rr.registers[1]]
+            rr = [(rr.registers[0] >> 8) % 256, rr.registers[0] % 256, (rr.registers[1] >> 8) % 256, rr.registers[1] % 256]
             log.info(f'read_holding_registers_1={rr}')
             int_value = (rr[3] << 24) | (rr[2] << 16) | (rr[1] << 8) | rr[0]
             return int_value
