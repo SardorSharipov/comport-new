@@ -13,10 +13,12 @@ from psycopg2 import sql
 from dotenv import load_dotenv
 
 load_dotenv('config.env')
-
+log_file = 'data.log'
+if os.path.exists(log_file):
+    os.remove(log_file)
 log = logging.getLogger()
 log.setLevel(logging.INFO)
-handler = RotatingFileHandler('data.log', maxBytes=10240, backupCount=1)
+handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 
