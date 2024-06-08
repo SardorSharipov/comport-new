@@ -16,7 +16,7 @@ load_dotenv('config.env')
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
-handler = RotatingFileHandler('logfile.log', maxBytes=10240, backupCount=1)
+handler = RotatingFileHandler('data.log', maxBytes=10240, backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 
