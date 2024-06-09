@@ -113,6 +113,8 @@ def check_com_port(port: str):
                 logging.warning(f'не удалось вообще считать из порта, ser.in_waiting={ser.in_waiting}')
         except Exception as ex:
             logging.warning(f'Исключение на открытие порта, ex={ex}')
+        finally:
+            ser.close()
         return False
 
 
