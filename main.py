@@ -98,7 +98,8 @@ def check_com_port(port: str):
             bytesize=8
         )
         try:
-            ser.open()
+            if not ser.is_open:
+                ser.open()
             if ser.in_waiting > 0:
                 data = ser.readline().decode('utf-8').strip()
                 hex_string = data.strip()
