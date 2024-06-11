@@ -102,7 +102,8 @@ def check_com_port(port: str):
                 ser.open()
             data = ''
             for _ in range(100):
-                data = ser.readline().decode('utf-8').strip()
+                data = ser.readline()
+                print(data)
                 print(ser.in_waiting)
             if data:
                 hex_string = data.strip()
