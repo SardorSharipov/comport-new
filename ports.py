@@ -4,6 +4,6 @@ ports = serial.tools.list_ports.comports()
 
 for port in sorted(ports):
     if '/dev/ttyUSB' in port.device:
-        print(port)
+        print(f'COMPORT: NAME={port.device}, SERIAL_NUMBER={port.serial_number}')
     else:
-        print('ALL:', port)
+        print(f'OTHER: NAME={port.device}, SERIAL_NUMBER={port.serial_number}')
