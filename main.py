@@ -106,9 +106,9 @@ def check_com_port(port: str):
                 print(data)
                 print(data.hex())
                 print(data.decode())
-                target_hex = data.hex()[46:54]
-                numeric_value = int(target_hex, 16)
-                print(numeric_value)
+                # target_hex = data.hex()[46:54]
+                # numeric_value = int(target_hex, 16)
+                # print(numeric_value)
             if data:
                 hex_string = data.strip()
                 if len(hex_string) >= 54:
