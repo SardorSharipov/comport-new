@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import time
@@ -7,6 +8,7 @@ from logging.handlers import RotatingFileHandler
 import psycopg2
 import serial
 import serial.tools.list_ports
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -135,9 +137,9 @@ def check_com_port(port: str):
         return False
 
 
-def send_telegram_message(message):
+async def send_telegram_message(message):
     try:
-        bot.send_message(chat_id=CHAT_ID, text=message)
+        await bot.send_message(chat_id=CHAT_ID, text=message)
     except TelegramError as e:
         log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
 
@@ -167,7 +169,7 @@ def get_last_value(slave_id):
             conn.close()
 
 
-def daily_check():
+async def daily_check():
     message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
@@ -178,7 +180,7 @@ def daily_check():
             message += f'Порт под salve_id={slave_id} работает.'
         if last_value:
             message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
-    send_telegram_message(message)
+    await send_telegram_message(message)
 
 
 def write_to_db(port, value):
@@ -217,17 +219,30 @@ def scheduled_read():
             log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
 
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
-scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+# scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
+#
+# scheduler.start()
 
-scheduler.start()
+# try:
+#     while True:
+#         time.sleep(1)
+# except (KeyboardInterrupt, SystemExit):
+#     scheduler.shutdown()
+#     log.info('Приложение остановлено.')
+# except Exception as ex:
+#     log.warning(f'Ошибка в приложение, {ex}')
 
-try:
-    while True:
-        time.sleep(1)
-except (KeyboardInterrupt, SystemExit):
-    scheduler.shutdown()
-    log.info('Приложение остановлено.')
-except Exception as ex:
-    log.warning(f'Ошибка в приложение, {ex}')
+if __name__ == '__main__':
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+    scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
+    scheduler.start()
+    try:
+        asyncio.get_event_loop().run_forever()
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
+        log.info('Приложение остановлено.')
+    except Exception as ex:
+        log.warning(f'Ошибка в приложение, {ex}')
