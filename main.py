@@ -6,6 +6,8 @@ from logging.handlers import RotatingFileHandler
 
 import psycopg2
 import serial
+import serial.tools.list_ports
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from psycopg2 import sql
@@ -28,7 +30,9 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 PROTOCOLS = [s.strip() for s in os.getenv('PROTOCOLS').split(',') if s.strip() != '']
 SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
-PORT_NAMES = [s.strip() for s in os.getenv('PORT_NAMES').split(',') if s.strip() != '']
+VIDS = [s.strip() for s in os.getenv('VIDS').split(',') if s.strip() != '']
+PIDS = [s.strip() for s in os.getenv('PIDS').split(',') if s.strip() != '']
+
 SENDING_INTER_COUNT = int(os.getenv('SENDING_INTER_COUNT'))
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
 POSTGRES_USERNAME = os.getenv('POSTGRES_USERNAME')
@@ -45,11 +49,21 @@ bot = Bot(token=TELEGRAM_TOKEN)
 port_slaves = {}
 slaves_port = {}
 port_protocol = {}
-for i in range(len(SLAVE_IDS)):
-    port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
-    slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
-    port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
+PORT_NAMES = []
+ports = serial.tools.list_ports.comports()
 
+for i in range(len(SLAVE_IDS)):
+    port_name = ''
+    for p in sorted(ports):
+        if p.vid == VIDS[i] and p.pid == PIDS[i]:
+            port_name = p.device
+    if '/dev/ttyUSB' in port_name:
+        PORT_NAMES.append(port_name)
+        port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
+        slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
+        port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
+
+log.info('PORTS:', PORT_NAMES)
 db_params = {
     'dbname': POSTGRES_DATABASE,
     'user': POSTGRES_USERNAME,
