@@ -52,13 +52,11 @@ port_protocol = {}
 PORT_NAMES = []
 ports = serial.tools.list_ports.comports()
 
-print(VIDS, PIDS)
 for i in range(len(SLAVE_IDS)):
     name = ''
     for p in ports:
         if p.vid == VIDS[i] and p.pid == PIDS[i]:
-            port_name = p.device
-            print('AAAAA', p.device)
+            name = p.device
     if '/dev/ttyUSB' in name:
         PORT_NAMES.append(name)
         port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
