@@ -100,18 +100,18 @@ def check_com_port(port: str):
         try:
             if not ser.is_open:
                 ser.open()
-            if ser.in_waiting > 0:
-                data = ser.readline().decode('utf-8').strip()
-                hex_string = data.strip()
-                if len(hex_string) >= 54:
-                    target_hex = hex_string[46:54]
-                    numeric_value = int(target_hex, 16)
-                    logging.info(f'Sending value: {numeric_value}')
-                    return numeric_value
-                else:
-                    logging.warning(f'Не удалось считать данные с порта, неправильный формат hex={hex_string}')
+            # if ser.in_waiting > 0:
+            data = ser.readline().decode('utf-8').strip()
+            hex_string = data.strip()
+            if len(hex_string) >= 54:
+                target_hex = hex_string[46:54]
+                numeric_value = int(target_hex, 16)
+                logging.info(f'Sending value: {numeric_value}')
+                return numeric_value
             else:
-                logging.warning(f'не удалось вообще считать из порта, ser.in_waiting={ser.in_waiting}')
+                logging.warning(f'Не удалось считать данные с порта, неправильный формат hex={hex_string}')
+            # else:
+            #     logging.warning(f'не удалось вообще считать из порта, ser.in_waiting={ser.in_waiting}')
         except Exception as ex:
             logging.warning(f'Исключение на открытие порта, ex={ex}')
         finally:
