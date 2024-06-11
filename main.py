@@ -104,7 +104,7 @@ def check_com_port(port: str):
             for _ in range(100):
                 data = ser.readline()
                 print(data)
-                print(ser.in_waiting)
+                print(data.hex())
             if data:
                 hex_string = data.strip()
                 if len(hex_string) >= 54:
