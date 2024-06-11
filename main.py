@@ -100,8 +100,11 @@ def check_com_port(port: str):
         try:
             if not ser.is_open:
                 ser.open()
-            # if ser.in_waiting > 0:
-            data = ser.readline()#.decode('utf-8').strip()
+            for _ in range(1000):
+                if ser.in_waiting > 0:
+                    print('a')
+                    break
+            data = ser.readline().decode('utf-8').strip()
             hex_string = data.strip()
             if len(hex_string) >= 54:
                 target_hex = hex_string[46:54]
