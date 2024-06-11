@@ -29,6 +29,7 @@ CHAT_ID = os.getenv('CHAT_ID')
 PROTOCOLS = [s.strip() for s in os.getenv('PROTOCOLS').split(',') if s.strip() != '']
 SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
 PORT_NAMES = [s.strip() for s in os.getenv('PORT_NAMES').split(',') if s.strip() != '']
+SENDING_INTER_COUNT = int(os.getenv('SENDING_INTER_COUNT'))
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
 POSTGRES_USERNAME = os.getenv('POSTGRES_USERNAME')
 POSTGRES_DATABASE = os.getenv('POSTGRES_DATABASE')
@@ -101,25 +102,16 @@ def check_com_port(port: str):
             if not ser.is_open:
                 ser.open()
             data = ''
-            for _ in range(100):
+            for _ in range(SENDING_INTER_COUNT):
                 data = ser.readline()
                 data = ''.join(s for s in data.decode() if s in '0123456789ABCDEF')
-                if len(data) >= 54:
-                    target_hex = data[47:54]
-                    numeric_value = int(target_hex, 16)
-                    print(target_hex, numeric_value)
-                    target_hex = data[46:54]
-                    numeric_value = int(target_hex, 16)
-                    print(target_hex, numeric_value)
-            if data:
-                hex_string = data.strip()
-                if len(hex_string) >= 54:
-                    target_hex = hex_string[46:54]
-                    numeric_value = int(target_hex, 16)
-                    logging.info(f'Sending value: {numeric_value}')
-                    return numeric_value
-                else:
-                    logging.warning(f'Не удалось считать данные с порта, неправильный формат hex={hex_string}')
+                if len(data) == 64:
+                    break
+            if len(data) == 64:
+                target_hex = data[46:54]
+                numeric_value = int(target_hex, 16)
+                logging.info(f'Sending value: {numeric_value}')
+                return numeric_value
             else:
                 logging.warning(f'Не удалось считать данные с порта, неправильный формат data={data}')
         except Exception as ex:
