@@ -102,6 +102,7 @@ def check_com_port(port: str):
                 ser.open()
             for _ in range(1000):
                 if ser.in_waiting > 0:
+                    print(ser.in_waiting)
                     print('a')
                     break
             data = ser.readline().decode('utf-8').strip()
