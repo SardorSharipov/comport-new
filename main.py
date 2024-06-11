@@ -103,7 +103,7 @@ def check_com_port(port: str):
             if ser.in_waiting > 0:
                 data = ser.readline().decode('utf-8').strip()
                 hex_string = data.strip()
-                if len(hex_string) >= 54:  # Ensure there's enough data
+                if len(hex_string) >= 54:
                     target_hex = hex_string[46:54]
                     numeric_value = int(target_hex, 16)
                     logging.info(f'Sending value: {numeric_value}')
