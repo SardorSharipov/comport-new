@@ -105,6 +105,7 @@ def check_com_port(port: str):
                 data = ser.readline()
                 print(data)
                 print(data.hex())
+                print(data.decode())
                 target_hex = data.hex()[46:54]
                 numeric_value = int(target_hex, 16)
                 print(numeric_value)
