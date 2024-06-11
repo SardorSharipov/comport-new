@@ -30,8 +30,8 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 PROTOCOLS = [s.strip() for s in os.getenv('PROTOCOLS').split(',') if s.strip() != '']
 SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
-VIDS = [s.strip() for s in os.getenv('VIDS').split(',') if s.strip() != '']
-PIDS = [s.strip() for s in os.getenv('PIDS').split(',') if s.strip() != '']
+VIDS = [int(s.strip()) for s in os.getenv('VIDS').split(',') if s.strip() != '']
+PIDS = [int(s.strip()) for s in os.getenv('PIDS').split(',') if s.strip() != '']
 
 SENDING_INTER_COUNT = int(os.getenv('SENDING_ITERATION_COUNT'))
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
@@ -53,12 +53,12 @@ PORT_NAMES = []
 ports = serial.tools.list_ports.comports()
 
 for i in range(len(SLAVE_IDS)):
-    port_name = ''
-    for p in sorted(ports):
+    name = ''
+    for p in ports:
         if p.vid == VIDS[i] and p.pid == PIDS[i]:
             port_name = p.device
-    if '/dev/ttyUSB' in port_name:
-        PORT_NAMES.append(port_name)
+    if '/dev/ttyUSB' in name:
+        PORT_NAMES.append(name)
         port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
         slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
         port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
