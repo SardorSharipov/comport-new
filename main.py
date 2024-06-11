@@ -33,7 +33,7 @@ SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() !
 VIDS = [s.strip() for s in os.getenv('VIDS').split(',') if s.strip() != '']
 PIDS = [s.strip() for s in os.getenv('PIDS').split(',') if s.strip() != '']
 
-SENDING_INTER_COUNT = int(os.getenv('SENDING_INTER_COUNT'))
+SENDING_INTER_COUNT = int(os.getenv('SENDING_ITERATION_COUNT'))
 POSTGRES_TABLE = os.getenv('POSTGRES_TABLE')
 POSTGRES_USERNAME = os.getenv('POSTGRES_USERNAME')
 POSTGRES_DATABASE = os.getenv('POSTGRES_DATABASE')
