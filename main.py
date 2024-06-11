@@ -63,7 +63,7 @@ for i in range(len(SLAVE_IDS)):
         slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
         port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
 
-log.info('PORTS:', PORT_NAMES)
+log.info('PORTS: %s', PORT_NAMES)
 db_params = {
     'dbname': POSTGRES_DATABASE,
     'user': POSTGRES_USERNAME,
