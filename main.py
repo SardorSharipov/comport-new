@@ -103,16 +103,14 @@ def check_com_port(port: str):
             data = ''
             for _ in range(100):
                 data = ser.readline()
-                print(data)
-                print(data.hex())
-                print(data.decode())
+                data = ''.join(s for s in data.decode() if s in '0123456789ABCDEF')
                 if len(data) >= 54:
-                    target_hex = data.hex()[47:54]
+                    target_hex = data[47:54]
                     numeric_value = int(target_hex, 16)
-                    print(numeric_value)
-                    target_hex = data.decode()[46:54]
+                    print(target_hex, numeric_value)
+                    target_hex = data[46:54]
                     numeric_value = int(target_hex, 16)
-                    print(numeric_value)
+                    print(target_hex, numeric_value)
             if data:
                 hex_string = data.strip()
                 if len(hex_string) >= 54:
