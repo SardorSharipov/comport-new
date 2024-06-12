@@ -207,9 +207,9 @@ async def daily_check():
         status = check_com_port(port_name)
         last_value = get_last_value(slave_id)
         if status is False:
-            message += f'\"{DESCRIPTIONS}\" тарози №{SLAVE_IDS} НЕ РАБОТАЕТ - '
+            message += f'\"{port_description[port_name]}\" тарози №{slave_id} НЕ РАБОТАЕТ - '
         else:
-            message += f'\"{DESCRIPTIONS}\" тарози №{SLAVE_IDS} - '
+            message += f'\"{port_description[port_name]}\" тарози №{slave_id} - '
         if last_value:
             message += f'последняя запись {last_value[0].strftime("%Y-%M-%d %H-%m")}, кол-во={last_value[1]}.'
         else:
