@@ -1,4 +1,5 @@
 .idea
 .venv
 venv
+__pychache__
 *.log
