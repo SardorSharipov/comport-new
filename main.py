@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
@@ -9,8 +8,6 @@ import psycopg2
 import serial
 import serial.tools.list_ports
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from psycopg2 import sql
 from pymodbus.client import ModbusSerialClient
@@ -24,7 +21,7 @@ if os.path.exists(log_file):
     os.remove(log_file)
 log = logging.getLogger()
 log.setLevel(logging.INFO)
-handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=1)
+handler = RotatingFileHandler(log_file)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 
@@ -47,7 +44,6 @@ DAILY_HOUR = int(os.getenv('DAILY_HOUR'))
 DAILY_MINUTE = int(os.getenv('DAILY_MINUTE'))
 IP_ADDRESS = os.getenv('IP_ADDRESS')
 
-bot = Bot(token=TELEGRAM_TOKEN)
 port_slaves = {}
 slaves_port = {}
 port_protocol = {}
@@ -138,10 +134,14 @@ def check_com_port(port: str):
 
 
 async def send_telegram_message(message):
+    bot = Bot(token=TELEGRAM_TOKEN)
     try:
+        await bot.initialize()
         await bot.send_message(chat_id=CHAT_ID, text=message)
     except TelegramError as e:
         log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
+    finally:
+        await bot.shutdown()
 
 
 def get_last_value(slave_id):
@@ -169,20 +169,6 @@ def get_last_value(slave_id):
             conn.close()
 
 
-async def daily_check():
-    message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
-    for port_name, slave_id in port_slaves.items():
-        status = check_com_port(port_name)
-        last_value = get_last_value(slave_id)
-        if status is not False:
-            message += f'Порт под salve_id={slave_id} не работает.\n'
-        else:
-            message += f'Порт под salve_id={slave_id} работает.'
-        if last_value:
-            message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
-    await send_telegram_message(message)
-
-
 def write_to_db(port, value):
     conn = None
     try:
@@ -208,6 +194,20 @@ def write_to_db(port, value):
             conn.close()
 
 
+async def daily_check():
+    message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
+    for port_name, slave_id in port_slaves.items():
+        status = check_com_port(port_name)
+        last_value = get_last_value(slave_id)
+        if status is not False:
+            message += f'Порт под salve_id={slave_id} не работает.\n'
+        else:
+            message += f'Порт под salve_id={slave_id} работает.'
+        if last_value:
+            message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
+    await send_telegram_message(message)
+
+
 def scheduled_read():
     for port in port_slaves:
         value = check_com_port(port)
@@ -219,27 +219,12 @@ def scheduled_read():
             log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
 
 
-# scheduler = BackgroundScheduler()
-# scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
-# scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
-#
-# scheduler.start()
-
-# try:
-#     while True:
-#         time.sleep(1)
-# except (KeyboardInterrupt, SystemExit):
-#     scheduler.shutdown()
-#     log.info('Приложение остановлено.')
-# except Exception as ex:
-#     log.warning(f'Ошибка в приложение, {ex}')
-
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler()
     scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
     scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
-    scheduler.start()
     try:
+        scheduler.start()
         asyncio.get_event_loop().run_forever()
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
