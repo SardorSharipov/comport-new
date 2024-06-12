@@ -135,16 +135,16 @@ def check_com_port(port: str):
 
 async def send_telegram_message(message):
     bot = Bot(token=TELEGRAM_TOKEN)
-    try:
-        print('START TO INIT')
-        await bot.initialize()
-        print('INITED')
-        await bot.send_message(chat_id=CHAT_ID, text=message, write_timeout=30, connect_timeout=10)
-        print('MESSAGED')
-    except TelegramError as e:
-        log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
-    finally:
-        await bot.shutdown()
+    for _ in range(10):
+        try:
+            await bot.initialize()
+            await asyncio.sleep(10)
+            await bot.send_message(chat_id=CHAT_ID, text=message, write_timeout=30, connect_timeout=10)
+            return
+        except TelegramError as e:
+            log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
+        finally:
+            await bot.shutdown()
 
 
 def get_last_value(slave_id):
@@ -199,15 +199,13 @@ def write_to_db(port, value):
 
 async def daily_check():
     message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
-    for _ in range(20):
-        message += 'A\n'
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
         last_value = get_last_value(slave_id)
         if status is not False:
-            message += f'Порт под salve_id={slave_id} не работает.\n'
-        else:
             message += f'Порт под salve_id={slave_id} работает.\n'
+        else:
+            message += f'Порт под salve_id={slave_id} не работает.\n'
         if last_value:
             message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
     await send_telegram_message(message)
