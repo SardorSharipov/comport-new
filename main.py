@@ -230,7 +230,7 @@ def scheduled_read():
 
 
 scheduler = AsyncIOScheduler()
-scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE, next_run_time=datetime.now())
+scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
 scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS, next_run_time=datetime.now())
 try:
     scheduler.start()
