@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 import psycopg2
 import serial
@@ -21,7 +21,7 @@ if os.path.exists(log_file):
     os.remove(log_file)
 log = logging.getLogger()
 log.setLevel(logging.INFO)
-handler = RotatingFileHandler(log_file)
+handler = TimedRotatingFileHandler(filename=log_file, interval=3, backupCount=3)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 
