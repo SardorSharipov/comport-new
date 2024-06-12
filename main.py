@@ -137,7 +137,7 @@ async def send_telegram_message(message):
     bot = Bot(token=TELEGRAM_TOKEN)
     try:
         await bot.initialize()
-        await bot.send_message(chat_id=CHAT_ID, text=message)
+        await bot.send_message(chat_id=CHAT_ID, text=message, write_timeout=30, connect_timeout=10)
     except TelegramError as e:
         log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
     finally:
@@ -202,7 +202,7 @@ async def daily_check():
         if status is not False:
             message += f'Порт под salve_id={slave_id} не работает.\n'
         else:
-            message += f'Порт под salve_id={slave_id} работает.'
+            message += f'Порт под salve_id={slave_id} работает.\n'
         if last_value:
             message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
     await send_telegram_message(message)
