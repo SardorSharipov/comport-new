@@ -27,6 +27,8 @@ log.addHandler(handler)
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
+
+DESCRIPTIONS = [s.strip() for s in os.getenv('DESCRIPTIONS').split(',') if s.strip() != '']
 PROTOCOLS = [s.strip() for s in os.getenv('PROTOCOLS').split(',') if s.strip() != '']
 SLAVE_IDS = [s.strip() for s in os.getenv('SLAVE_IDS').split(',') if s.strip() != '']
 VIDS = [int(s.strip()) for s in os.getenv('VIDS').split(',') if s.strip() != '']
@@ -47,6 +49,7 @@ IP_ADDRESS = os.getenv('IP_ADDRESS')
 port_slaves = {}
 slaves_port = {}
 port_protocol = {}
+port_description = {}
 PORT_NAMES = []
 ports = serial.tools.list_ports.comports()
 
@@ -60,6 +63,7 @@ for i in range(len(SLAVE_IDS)):
         port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
         slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
         port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
+        port_description[PORT_NAMES[i]] = DESCRIPTIONS[i]
 
 log.info('PORTS: %s', PORT_NAMES)
 db_params = {
@@ -202,12 +206,16 @@ async def daily_check():
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
         last_value = get_last_value(slave_id)
-        if status is not False:
-            message += f'Порт под salve_id={slave_id} работает.\n'
+        if status is False:
+            message += f'\"{DESCRIPTIONS}\" тарози №{SLAVE_IDS} НЕ РАБОТАЕТ - '
         else:
-            message += f'Порт под salve_id={slave_id} не работает.\n'
+            message += f'\"{DESCRIPTIONS}\" тарози №{SLAVE_IDS} - '
         if last_value:
-            message += f'Последняя запись=[indate={last_value[0]}, weight={last_value[1]}].\n'
+            dt = datetime.strptime(last_value[0], '%Y-%M-%d %H-%m')
+            message += f'последняя запись {dt.strftime("%Y-%M-%d %H-%m")}, кол-во={last_value[1]}.'
+        else:
+            message += 'последней записи еще нет!'
+        message += '\n'
     await send_telegram_message(message)
 
 
@@ -222,15 +230,14 @@ def scheduled_read():
             log.warning(f'Ошибка чтения порта={port}, slave_id={port_slaves[port]}')
 
 
-if __name__ == '__main__':
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
-    scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
-    try:
-        scheduler.start()
-        asyncio.get_event_loop().run_forever()
-    except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()
-        log.info('Приложение остановлено.')
-    except Exception as ex:
-        log.warning(f'Ошибка в приложение, {ex}')
+scheduler = AsyncIOScheduler()
+scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS)
+try:
+    scheduler.start()
+    asyncio.get_event_loop().run_forever()
+except (KeyboardInterrupt, SystemExit):
+    scheduler.shutdown()
+    log.info('Приложение остановлено.')
+except Exception as ex:
+    log.warning(f'Ошибка в приложение, {ex}')
