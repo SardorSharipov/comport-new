@@ -44,6 +44,7 @@ POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 TIMER_SECONDS = int(os.getenv('TIMER_SECONDS'))
 DAILY_HOUR = int(os.getenv('DAILY_HOUR'))
 DAILY_MINUTE = int(os.getenv('DAILY_MINUTE'))
+DAILY_INTERVAL = int(os.getenv('DAILY_INTERVAL'))
 IP_ADDRESS = os.getenv('IP_ADDRESS')
 
 port_slaves = {}
@@ -260,6 +261,8 @@ def scheduled_read():
 
 scheduler = AsyncIOScheduler()
 scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+if DAILY_INTERVAL > 0:
+    scheduler.add_job(daily_check, 'interval', minutes=DAILY_INTERVAL, next_run_time=datetime.now())
 scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS, next_run_time=datetime.now())
 try:
     scheduler.start()
