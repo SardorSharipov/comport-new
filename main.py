@@ -237,7 +237,9 @@ async def daily_check():
         else:
             message += f'\"{port_description[port_name]}\" №{slave_id} - '
         if last_value:
-            message += f't={last_value[1]}; d={round(last_value[1]) - last_day}; h={round(last_value[1]) - last_hour}; '
+            last_day_diff = round(last_value[1]) - last_day if last_day else 0
+            last_hour_diff = round(last_value[1]) - last_hour if last_hour else 0
+            message += f't={last_value[1]}; d={last_day_diff}; h={last_hour_diff}; '
             message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}.'
         else:
             message += 'последней записи еще нет!'
