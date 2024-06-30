@@ -130,8 +130,8 @@ def check_com_port(port: str):
                 return numeric_value
             else:
                 logging.warning(f'Не удалось считать данные с порта, неправильный формат data={data}')
-        except Exception as ex:
-            logging.warning(f'Исключение на открытие порта, ex={ex}')
+        except Exception as exs:
+            logging.warning(f'Исключение на открытие порта, ex={exs}')
         finally:
             ser.close()
         return False
@@ -165,10 +165,36 @@ def get_last_value(slave_id):
             ORDER BY indate DESC
             LIMIT 1
         ''')
+
+        query_day = sql.SQL(f'''
+            SELECT 
+                ROUND(weight)  AS weight
+            FROM {POSTGRES_TABLE} 
+            WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 DAY'
+            ORDER BY indate ASC
+            LIMIT 1
+        ''')
+
+        query_hour = sql.SQL(f'''
+            SELECT 
+                ROUND(weight)  AS weight 
+            FROM {POSTGRES_TABLE} 
+            WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
+            ORDER BY indate ASC
+            LIMIT 1
+        ''')
+
         cursor.execute(query_check, )
         last_value = cursor.fetchone()
+
+        cursor.execute(query_day, )
+        last_day = cursor.fetchone()
+
+        cursor.execute(query_hour, )
+        last_hour = cursor.fetchone()
+
         cursor.close()
-        return last_value
+        return last_value, last_day, last_hour
     except Exception as e:
         log.warning(f'Ошибка чтения с базы данных: {e}')
     finally:
@@ -179,7 +205,7 @@ def get_last_value(slave_id):
 def write_to_db(port, value):
     conn = None
     try:
-        last_value = get_last_value(port_slaves[port])
+        last_value, _, _ = get_last_value(port_slaves[port])
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
         coefficient = 10.0 if port_protocol[port] == 'modbus' else 100.0
@@ -205,13 +231,14 @@ async def daily_check():
     message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
-        last_value = get_last_value(slave_id)
+        last_value, last_day, last_hour = get_last_value(slave_id)
         if status is False:
-            message += f'\"{port_description[port_name]}\" тарози №{slave_id} НЕ РАБОТАЕТ - '
+            message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ - '
         else:
-            message += f'\"{port_description[port_name]}\" тарози №{slave_id} - '
+            message += f'\"{port_description[port_name]}\" №{slave_id} - '
         if last_value:
-            message += f'последняя запись {last_value[0].strftime("%Y-%m-%d %H-%M")}, кол-во={last_value[1]}.'
+            message += f't={last_value[1]}; d={round(last_value[1]) - last_day}; h={round(last_value[1]) - last_hour}; '
+            message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}.'
         else:
             message += 'последней записи еще нет!'
         message += '\n'
