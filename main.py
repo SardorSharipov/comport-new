@@ -106,7 +106,7 @@ def check_com_port(port: str):
             return False
         finally:
             client.close()
-    else:
+    elif port_protocol[port] == 'sending':
         ser = serial.Serial(
             port=port,
             baudrate=19200,
@@ -135,6 +135,9 @@ def check_com_port(port: str):
             logging.warning(f'Исключение на открытие порта, ex={exs}')
         finally:
             ser.close()
+        return False
+    else:
+        logging.warning(f'Не удалось считать данные с порта, неправильный отправляемого типа={port_protocol[port]}')
         return False
 
 
@@ -169,7 +172,7 @@ def get_last_value(slave_id):
 
         query_day = sql.SQL(f'''
             SELECT 
-                ROUND(weight)  AS weight
+                weight
             FROM {POSTGRES_TABLE} 
             WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 DAY'
             ORDER BY indate ASC
@@ -178,7 +181,7 @@ def get_last_value(slave_id):
 
         query_hour = sql.SQL(f'''
             SELECT 
-                ROUND(weight)  AS weight 
+                weight 
             FROM {POSTGRES_TABLE} 
             WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
             ORDER BY indate ASC
@@ -234,17 +237,17 @@ async def daily_check():
         status = check_com_port(port_name)
         last_value, last_day, last_hour = get_last_value(slave_id)
         if status is False:
-            message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ - '
+            message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
         else:
-            message += f'\"{port_description[port_name]}\" №{slave_id} - '
+            message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
             last_day_diff = int(last_value[1] - last_day[0]) if last_day else 0
             last_hour_diff = int(last_value[1] - last_hour[0]) if last_hour else 0
-            message += f't={last_value[1]}; d={last_day_diff}; h={last_hour_diff}; '
-            message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}.'
+            message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
+            message += f'Последняя запись={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
         else:
-            message += 'последней записи еще нет!'
-        message += '\n'
+            message += 'последней записи еще нет!\n'
+        message += '-' * 30 + '\n'
     await send_telegram_message(message)
 
 
