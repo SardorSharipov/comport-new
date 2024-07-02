@@ -154,6 +154,40 @@ async def send_telegram_message(message):
             await bot.shutdown()
 
 
+def get_max(slave_id):
+    conn = None
+    try:
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        query_hour = sql.SQL(f'''
+                SELECT 
+                    weight 
+                FROM {POSTGRES_TABLE} 
+                WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
+                ORDER BY indate DESC
+                LIMIT 1
+            ''')
+        query_day = sql.SQL(f'''
+               SELECT 
+                   weight
+               FROM {POSTGRES_TABLE} 
+               WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 DAY'
+               ORDER BY indate DESC
+               LIMIT 1
+           ''')
+        cursor.execute(query_hour, )
+        last_hour = cursor.fetchone()
+        cursor.execute(query_day, )
+        last_day = cursor.fetchone()
+        cursor.close()
+        return last_hour, last_day
+    except Exception as e:
+        log.warning(f'Ошибка чтения с базы данных (last_hour|last_day): {e}')
+    finally:
+        if conn:
+            conn.close()
+
+
 def get_last_value(slave_id):
     conn = None
     try:
@@ -168,38 +202,12 @@ def get_last_value(slave_id):
             ORDER BY indate DESC
             LIMIT 1
         ''')
-
-        query_day = sql.SQL(f'''
-            SELECT 
-                weight
-            FROM {POSTGRES_TABLE} 
-            WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 DAY'
-            ORDER BY indate ASC
-            LIMIT 1
-        ''')
-
-        query_hour = sql.SQL(f'''
-            SELECT 
-                weight 
-            FROM {POSTGRES_TABLE} 
-            WHERE address = {slave_id} AND indate >= CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
-            ORDER BY indate ASC
-            LIMIT 1
-        ''')
-
         cursor.execute(query_check, )
         last_value = cursor.fetchone()
-
-        cursor.execute(query_day, )
-        last_day = cursor.fetchone()
-
-        cursor.execute(query_hour, )
-        last_hour = cursor.fetchone()
-
         cursor.close()
-        return last_value, last_day, last_hour
+        return last_value
     except Exception as e:
-        log.warning(f'Ошибка чтения с базы данных: {e}')
+        log.warning(f'Ошибка чтения с базы данных (last_value): {e}')
     finally:
         if conn:
             conn.close()
@@ -234,16 +242,15 @@ async def daily_check():
     message = ''
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
-        last_value, last_day, last_hour = get_last_value(slave_id)
+        last_value = get_last_value(slave_id)
         if status is False:
             message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
         else:
             message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
-            print(last_hour)
-            print(last_value)
-            last_day_diff = int(last_value[1] - last_day[0]) if last_day else 0
-            last_hour_diff = int(last_value[1] - last_hour[0]) if last_hour else 0
+            last_hour, last_day = get_max(slave_id)
+            last_day_diff = int(last_value[1] - last_day[0] if len(last_day) == 1 else 0)
+            last_hour_diff = int(last_value[1] - last_hour[0] if len(last_hour) == 1 else 0)
             message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
             message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
         else:
