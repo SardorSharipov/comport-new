@@ -246,7 +246,7 @@ async def daily_check():
             last_day_diff = int(last_value[1] - last_day[0]) if last_day else 0
             last_hour_diff = int(last_value[1] - last_hour[0]) if last_hour else 0
             message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
-            message += f'Последняя запись={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
+            message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
         else:
             message += 'последней записи еще нет!\n'
         message += '-' * 30 + '\n'
