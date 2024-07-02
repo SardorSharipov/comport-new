@@ -45,7 +45,6 @@ TIMER_SECONDS = int(os.getenv('TIMER_SECONDS'))
 DAILY_HOUR = int(os.getenv('DAILY_HOUR'))
 DAILY_MINUTE = int(os.getenv('DAILY_MINUTE'))
 DAILY_INTERVAL = int(os.getenv('DAILY_INTERVAL'))
-IP_ADDRESS = os.getenv('IP_ADDRESS')
 
 port_slaves = {}
 slaves_port = {}
