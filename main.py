@@ -232,7 +232,7 @@ def write_to_db(port, value):
 
 
 async def daily_check():
-    message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
+    message = ''
     for port_name, slave_id in port_slaves.items():
         status = check_com_port(port_name)
         last_value, last_day, last_hour = get_last_value(slave_id)
@@ -241,6 +241,8 @@ async def daily_check():
         else:
             message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
+            print(last_hour)
+            print(last_value)
             last_day_diff = int(last_value[1] - last_day[0]) if last_day else 0
             last_hour_diff = int(last_value[1] - last_hour[0]) if last_hour else 0
             message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
