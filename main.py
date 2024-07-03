@@ -241,12 +241,12 @@ def write_to_db(port, value):
 async def daily_check():
     message = ''
     for port_name, slave_id in port_slaves.items():
-        status = check_com_port(port_name)
         last_value = get_last_value(slave_id)
-        if status is False:
-            message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
-        else:
-            message += f'\"{port_description[port_name]}\" №{slave_id}\n'
+        # status = check_com_port(port_name)
+        # if status is False:
+        #     message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
+        # else:
+        message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
             last_hour, last_day = get_max(slave_id)
             last_day_diff = int(last_value[1] - last_day[0] if len(last_day) == 1 else 0)
