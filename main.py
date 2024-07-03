@@ -216,7 +216,7 @@ def get_last_value(slave_id):
 def write_to_db(port, value):
     conn = None
     try:
-        last_value, _, _ = get_last_value(port_slaves[port])
+        last_value = get_last_value(port_slaves[port])
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
         coefficient = 10.0 if port_protocol[port] == 'modbus' else 100.0
@@ -271,10 +271,10 @@ def scheduled_read():
 
 
 scheduler = AsyncIOScheduler()
+scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS, next_run_time=datetime.now())
 scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
 if DAILY_INTERVAL > 0:
     scheduler.add_job(daily_check, 'interval', minutes=DAILY_INTERVAL, next_run_time=datetime.now())
-scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS, next_run_time=datetime.now())
 try:
     scheduler.start()
     asyncio.get_event_loop().run_forever()
