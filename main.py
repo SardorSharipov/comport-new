@@ -243,10 +243,6 @@ async def daily_check():
     message = ''
     for port_name, slave_id in port_slaves.items():
         last_value = get_last_value(slave_id)
-        # status = check_com_port(port_name)
-        # if status is False:
-        #     message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
-        # else:
         message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
             last_hour, last_day = get_max(slave_id)
