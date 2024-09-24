@@ -52,14 +52,15 @@ port_protocol = {}
 port_description = {}
 PORT_NAMES = []
 ports = serial.tools.list_ports.comports()
+names = []
+for p in ports:
+    if p.vid in VIDS and p.pid == PIDS:
+        names.append(p.device)
+assert len(names) == len(SLAVE_IDS), f'Отличаются кол-во портов и slave_ids {names}, {SLAVE_IDS}'
 
 for i in range(len(SLAVE_IDS)):
-    name = ''
-    for p in ports:
-        if p.vid == VIDS[i] and p.pid == PIDS[i]:
-            name = p.device
-    if '/dev/ttyUSB' in name:
-        PORT_NAMES.append(name)
+    if '/dev/ttyUSB' in names[i]:
+        PORT_NAMES.append(names[i])
         port_slaves[PORT_NAMES[i]] = int(SLAVE_IDS[i])
         slaves_port[int(SLAVE_IDS[i])] = PORT_NAMES[i]
         port_protocol[PORT_NAMES[i]] = PROTOCOLS[i]
