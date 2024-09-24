@@ -44,7 +44,7 @@ POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 TIMER_SECONDS = int(os.getenv('TIMER_SECONDS'))
 DAILY_HOUR = int(os.getenv('DAILY_HOUR'))
 DAILY_MINUTE = int(os.getenv('DAILY_MINUTE'))
-IP_ADDRESS = os.getenv('IP_ADDRESS')
+DAILY_INTERVAL = int(os.getenv('DAILY_INTERVAL'))
 
 port_slaves = {}
 slaves_port = {}
@@ -106,7 +106,7 @@ def check_com_port(port: str):
             return False
         finally:
             client.close()
-    else:
+    elif port_protocol[port] == 'sending':
         ser = serial.Serial(
             port=port,
             baudrate=19200,
@@ -131,10 +131,13 @@ def check_com_port(port: str):
                 return numeric_value
             else:
                 logging.warning(f'Не удалось считать данные с порта, неправильный формат data={data}')
-        except Exception as ex:
-            logging.warning(f'Исключение на открытие порта, ex={ex}')
+        except Exception as exs:
+            logging.warning(f'Исключение на открытие порта, ex={exs}')
         finally:
             ser.close()
+        return False
+    else:
+        logging.warning(f'Не удалось считать данные с порта, неправильный отправляемого типа={port_protocol[port]}')
         return False
 
 
@@ -150,6 +153,40 @@ async def send_telegram_message(message):
             log.warning(f'Не удалось отправить сообщение в телеграм: {e}')
         finally:
             await bot.shutdown()
+
+
+def get_max(slave_id):
+    conn = None
+    try:
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        query_hour = sql.SQL(f'''
+                SELECT 
+                    weight 
+                FROM {POSTGRES_TABLE} 
+                WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
+                ORDER BY indate DESC
+                LIMIT 1
+            ''')
+        query_day = sql.SQL(f'''
+               SELECT 
+                   weight
+               FROM {POSTGRES_TABLE} 
+               WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 DAY'
+               ORDER BY indate DESC
+               LIMIT 1
+           ''')
+        cursor.execute(query_hour, )
+        last_hour = cursor.fetchone()
+        cursor.execute(query_day, )
+        last_day = cursor.fetchone()
+        cursor.close()
+        return last_hour, last_day
+    except Exception as e:
+        log.warning(f'Ошибка чтения с базы данных (last_hour|last_day): {e}')
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_last_value(slave_id):
@@ -171,7 +208,7 @@ def get_last_value(slave_id):
         cursor.close()
         return last_value
     except Exception as e:
-        log.warning(f'Ошибка чтения с базы данных: {e}')
+        log.warning(f'Ошибка чтения с базы данных (last_value): {e}')
     finally:
         if conn:
             conn.close()
@@ -203,19 +240,23 @@ def write_to_db(port, value):
 
 
 async def daily_check():
-    message = f'Ежедневная проверка портов по IP: {IP_ADDRESS}\n'
+    message = ''
     for port_name, slave_id in port_slaves.items():
-        status = check_com_port(port_name)
         last_value = get_last_value(slave_id)
-        if status is False:
-            message += f'\"{port_description[port_name]}\" тарози №{slave_id} НЕ РАБОТАЕТ - '
-        else:
-            message += f'\"{port_description[port_name]}\" тарози №{slave_id} - '
+        # status = check_com_port(port_name)
+        # if status is False:
+        #     message += f'\"{port_description[port_name]}\" №{slave_id} НЕ РАБОТАЕТ\n'
+        # else:
+        message += f'\"{port_description[port_name]}\" №{slave_id}\n'
         if last_value:
-            message += f'последняя запись {last_value[0].strftime("%Y-%m-%d %H-%M")}, кол-во={last_value[1]}.'
+            last_hour, last_day = get_max(slave_id)
+            last_day_diff = int(last_value[1] - last_day[0] if len(last_day) == 1 else 0)
+            last_hour_diff = int(last_value[1] - last_hour[0] if len(last_hour) == 1 else 0)
+            message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
+            message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
         else:
-            message += 'последней записи еще нет!'
-        message += '\n'
+            message += 'последней записи еще нет!\n'
+        message += '-' * 30 + '\n'
     await send_telegram_message(message)
 
 
@@ -231,8 +272,10 @@ def scheduled_read():
 
 
 scheduler = AsyncIOScheduler()
-scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
 scheduler.add_job(scheduled_read, 'interval', seconds=TIMER_SECONDS, next_run_time=datetime.now())
+scheduler.add_job(daily_check, 'cron', hour=DAILY_HOUR, minute=DAILY_MINUTE)
+if DAILY_INTERVAL > 0:
+    scheduler.add_job(daily_check, 'interval', minutes=DAILY_INTERVAL, next_run_time=datetime.now())
 try:
     scheduler.start()
     asyncio.get_event_loop().run_forever()
