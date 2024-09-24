@@ -54,8 +54,9 @@ PORT_NAMES = []
 ports = serial.tools.list_ports.comports()
 names = []
 for p in ports:
-    if p.vid in VIDS and p.pid == PIDS:
+    if p.vid in VIDS and p.pid in PIDS:
         names.append(p.device)
+
 assert len(names) == len(SLAVE_IDS), f'Отличаются кол-во портов и slave_ids {names}, {SLAVE_IDS}'
 
 for i in range(len(SLAVE_IDS)):
