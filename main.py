@@ -163,21 +163,21 @@ def get_max(slave_id):
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
         query_hour = sql.SQL(f'''
-                SELECT 
-                    weight 
-                FROM {POSTGRES_TABLE} 
-                WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 HOUR'
-                ORDER BY indate DESC
-                LIMIT 1
-            ''')
+            SELECT 
+                weight 
+            FROM {POSTGRES_TABLE} 
+            WHERE address = {slave_id} AND indate < DATE_TRUNC('HOUR', CURRENT_TIMESTAMP)
+            ORDER BY indate DESC
+            LIMIT 1
+        ''')
         query_day = sql.SQL(f'''
-               SELECT 
-                   weight
-               FROM {POSTGRES_TABLE} 
-               WHERE address = {slave_id} AND indate < CURRENT_TIMESTAMP - INTERVAL '1 DAY'
-               ORDER BY indate DESC
-               LIMIT 1
-           ''')
+           SELECT 
+               weight
+           FROM {POSTGRES_TABLE} 
+           WHERE address = {slave_id} AND indate < CURRENT_DATE
+           ORDER BY indate DESC
+           LIMIT 1
+        ''')
         cursor.execute(query_hour, )
         last_hour = cursor.fetchone()
         cursor.execute(query_day, )
@@ -246,11 +246,11 @@ async def daily_check():
     for port_name, slave_id in port_slaves.items():
         last_value = get_last_value(slave_id)
         message += f'\"{port_description[port_name]}\" №{slave_id}\n'
-        if last_value:
+        if last_value and len(last_value) == 2:
             last_hour, last_day = get_max(slave_id)
             last_day_diff = int(last_value[1] - last_day[0] if len(last_day) == 1 else 0)
             last_hour_diff = int(last_value[1] - last_hour[0] if len(last_hour) == 1 else 0)
-            message += f'Всего={last_value[1]}\nДень={last_day_diff}\nЧас={last_hour_diff}\n'
+            message += f'Всего={last_value[1]}\nЗа текущий день={last_day_diff}\nЗа текущий час={last_hour_diff}\n'
             message += f'L={last_value[0].strftime("%Y-%m-%d: %H-%M-%S")}\n'
         else:
             message += 'последней записи еще нет!\n'
