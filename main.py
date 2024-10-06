@@ -51,7 +51,7 @@ slaves_port = {}
 port_protocol = {}
 port_description = {}
 PORT_NAMES = []
-ports = serial.tools.list_ports.comports()
+ports = sorted(serial.tools.list_ports.comports())
 names = []
 for i in range(len(VIDS)):
     for p in ports:
